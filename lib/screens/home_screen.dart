@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../models/care_task.dart';
 import '../services/home_service.dart';
 import '../theme/app_theme.dart';
+import 'scan_instructions_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +25,15 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  void _openScanInstructions() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ScanInstructionsScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final completedTasks = HomeService.getCompletedTasks();
@@ -32,6 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
+
+      // ---------------------------------------------------------
+      // BOTTOM NAVIGATION
+      // ---------------------------------------------------------
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         backgroundColor: Colors.white,
@@ -54,12 +69,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
+      // ---------------------------------------------------------
+      // MAIN BODY
+      // ---------------------------------------------------------
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              // -------------------------------------------------
+              // APP NAME
+              // -------------------------------------------------
               const Text(
                 'CareBridge',
                 style: TextStyle(
@@ -71,10 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 18),
 
+              // -------------------------------------------------
+              // GREETING
+              // -------------------------------------------------
               _buildGreetingBanner(),
 
               const SizedBox(height: 24),
 
+              // -------------------------------------------------
+              // HELP SECTION
+              // -------------------------------------------------
               const Text(
                 'How can we help?',
                 style: TextStyle(
@@ -86,37 +115,67 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 14),
 
+              // -------------------------------------------------
+              // SCAN INSTRUCTIONS
+              // -------------------------------------------------
               _ActionCard(
                 icon: Icons.document_scanner_outlined,
                 title: 'Scan Instructions',
                 subtitle:
                 'Scan your prescription or discharge instructions',
                 color: const Color(0xFF2D8CFF),
-                onTap: () {},
+                onTap: _openScanInstructions,
               ),
 
               const SizedBox(height: 12),
 
+              // -------------------------------------------------
+              // CARE PLAN
+              // -------------------------------------------------
               _ActionCard(
                 icon: Icons.assignment_outlined,
                 title: 'My Care Plan',
                 subtitle: "View today's care tasks and instructions",
                 color: const Color(0xFF2E9B68),
-                onTap: () {},
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Care Plan will be connected next.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 12),
 
+              // -------------------------------------------------
+              // ASK CAREBRIDGE
+              // -------------------------------------------------
               _ActionCard(
                 icon: Icons.mic_none_outlined,
                 title: 'Ask CareBridge',
                 subtitle: 'Ask questions using your voice',
                 color: const Color(0xFF8B5FBF),
-                onTap: () {},
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Ask CareBridge will be connected later.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 28),
 
+              // -------------------------------------------------
+              // PROGRESS
+              // -------------------------------------------------
               const Text(
                 "Today's Progress",
                 style: TextStyle(
@@ -136,6 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 28),
 
+              // -------------------------------------------------
+              // NEXT TASK
+              // -------------------------------------------------
               const Text(
                 'Next Up',
                 style: TextStyle(
@@ -157,6 +219,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // =============================================================
+  // GREETING BANNER
+  // =============================================================
 
   Widget _buildGreetingBanner() {
     return Container(
@@ -184,7 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.navy,
             ),
           ),
+
           SizedBox(height: 8),
+
           Text(
             "Let's take care of you today.",
             style: TextStyle(
@@ -192,7 +260,9 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.textSecondary,
             ),
           ),
+
           SizedBox(height: 18),
+
           Row(
             children: [
               Icon(
@@ -200,7 +270,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppTheme.primary,
                 size: 17,
               ),
+
               SizedBox(width: 7),
+
               Text(
                 'Your health matters',
                 style: TextStyle(
@@ -215,6 +287,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // =============================================================
+  // PROGRESS CARD
+  // =============================================================
 
   Widget _buildProgressCard(
       int completed,
@@ -240,7 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '$completed of $total tasks completed',
@@ -250,6 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.navy,
                 ),
               ),
+
               Text(
                 '$percentage%',
                 style: const TextStyle(
@@ -269,7 +347,8 @@ class _HomeScreenState extends State<HomeScreen> {
               value: progress,
               minHeight: 12,
               backgroundColor: const Color(0xFFE8ECEC),
-              valueColor: const AlwaysStoppedAnimation<Color>(
+              valueColor:
+              const AlwaysStoppedAnimation<Color>(
                 AppTheme.primary,
               ),
             ),
@@ -289,6 +368,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // =============================================================
+  // NEXT TASK CARD
+  // =============================================================
 
   Widget _buildNextTaskCard(CareTask task) {
     return Container(
@@ -317,7 +400,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
                 Text(
                   task.title,
@@ -327,7 +411,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppTheme.navy,
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   task.time,
                   style: const TextStyle(
@@ -352,6 +438,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // =============================================================
+  // COMPLETED CARD
+  // =============================================================
+
   Widget _buildCompletedCard() {
     return Container(
       width: double.infinity,
@@ -367,7 +457,9 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Color(0xFF2E9B68),
             size: 34,
           ),
+
           SizedBox(width: 14),
+
           Expanded(
             child: Text(
               'All your care tasks are completed for today!',
@@ -382,6 +474,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+// ===============================================================
+// ACTION CARD
+// ===============================================================
 
 class _ActionCard extends StatelessWidget {
   final IconData icon;
@@ -428,7 +524,8 @@ class _ActionCard extends StatelessWidget {
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -438,7 +535,9 @@ class _ActionCard extends StatelessWidget {
                         color: AppTheme.navy,
                       ),
                     ),
+
                     const SizedBox(height: 5),
+
                     Text(
                       subtitle,
                       style: const TextStyle(
