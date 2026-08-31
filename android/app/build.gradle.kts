@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.carebridge_2.androidapp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

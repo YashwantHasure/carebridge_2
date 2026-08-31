@@ -1,7 +1,6 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -19,29 +18,39 @@ class _ScanInstructionsScreenState
     extends State<ScanInstructionsScreen> {
   final ImagePicker _picker = ImagePicker();
 
-  XFile? _selectedImage;
-  PlatformFile? _selectedPdf;
+  File? _selectedImage;
+
   bool _isProcessing = false;
+  bool _showExtracted = false;
+
+  String? _selectedFileName;
+  String? _selectedSource;
 
   // =============================================================
   // CAMERA
   // =============================================================
 
-  Future<void> _openCamera() async {
+  Future<void> _captureWithCamera() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85,
+        imageQuality: 90,
       );
 
-      if (image != null) {
-        setState(() {
-          _selectedImage = image;
-          _selectedPdf = null;
-        });
+      if (image == null) {
+        return;
       }
+
+      setState(() {
+        _selectedImage = File(image.path);
+        _selectedFileName = 'Captured prescription';
+        _selectedSource = 'Camera';
+        _showExtracted = false;
+      });
     } catch (e) {
-      _showMessage('Unable to open camera.');
+      _showMessage(
+        'Unable to open the camera. Please check camera permission.',
+      );
     }
   }
 
@@ -49,79 +58,70 @@ class _ScanInstructionsScreenState
   // GALLERY
   // =============================================================
 
-  Future<void> _openGallery() async {
+  Future<void> _pickFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85,
+        imageQuality: 90,
       );
 
-      if (image != null) {
-        setState(() {
-          _selectedImage = image;
-          _selectedPdf = null;
-        });
-      }
-    } catch (e) {
-      _showMessage('Unable to open gallery.');
-    }
-  }
-
-  // =============================================================
-  // PDF PICKER
-  // =============================================================
-
-  Future<void> _openPdfPicker() async {
-    try {
-      final FilePickerResult? result =
-      await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        withData: kIsWeb,
-      );
-
-      if (result == null || result.files.isEmpty) {
+      if (image == null) {
         return;
       }
 
       setState(() {
-        _selectedPdf = result.files.first;
-        _selectedImage = null;
+        _selectedImage = File(image.path);
+        _selectedFileName = 'Selected prescription';
+        _selectedSource = 'Gallery';
+        _showExtracted = false;
       });
     } catch (e) {
-      _showMessage('Unable to select PDF.');
+      _showMessage(
+        'Unable to access your gallery.',
+      );
     }
   }
 
   // =============================================================
-  // REMOVE DOCUMENT
+  // PDF
   // =============================================================
 
-  void _removeDocument() {
-    setState(() {
-      _selectedImage = null;
-      _selectedPdf = null;
-    });
+  Future<void> _pickPdf() async {
+    // Prototype placeholder.
+    //
+    // Real PDF picker can be connected later using
+    // file_picker or another document picker.
+
+    _showMessage(
+      'PDF upload will be connected in the next version.',
+    );
   }
 
   // =============================================================
-  // PROCESS DOCUMENT
+  // PROCESS WITH AI
   // =============================================================
 
-  Future<void> _processDocument() async {
-    if (_selectedImage == null && _selectedPdf == null) {
-      _showMessage('Please select a document first.');
+  Future<void> _understandWithAI() async {
+    if (_selectedImage == null) {
+      _showMessage(
+        'Please capture or select your instructions first.',
+      );
       return;
     }
 
     setState(() {
       _isProcessing = true;
+      _showExtracted = false;
     });
 
-    // Temporary prototype processing.
-    // This will later be replaced with OCR + AI.
+    // Prototype AI/OCR processing simulation.
+    //
+    // Later this will be replaced by:
+    // Camera/Image → OCR → Medical text extraction →
+    // AI interpretation → Care tasks.
+
     await Future.delayed(
-      const Duration(seconds: 2),
+      const Duration(seconds: 3),
     );
 
     if (!mounted) {
@@ -130,144 +130,22 @@ class _ScanInstructionsScreenState
 
     setState(() {
       _isProcessing = false;
+      _showExtracted = true;
     });
-
-    _showProcessingResult();
   }
 
   // =============================================================
-  // PROCESSING RESULT
+  // REMOVE SELECTED DOCUMENT
   // =============================================================
 
-  void _showProcessingResult() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(
-            24,
-            20,
-            24,
-            30,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(30),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 45,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDDE3E3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              Container(
-                width: 70,
-                height: 70,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE8F7EF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Color(0xFF2E9B68),
-                  size: 40,
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              const Text(
-                'Document processed',
-                style: TextStyle(
-                  color: AppTheme.navy,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                'CareBridge has identified important '
-                    'care information from your document.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              _InstructionPreview(
-                icon: Icons.medication_outlined,
-                title: 'Medication',
-                subtitle:
-                'Take your prescribed medication as instructed.',
-              ),
-
-              const SizedBox(height: 10),
-
-              _InstructionPreview(
-                icon: Icons.schedule_outlined,
-                title: 'Schedule',
-                subtitle:
-                'Follow the recommended medication schedule.',
-              ),
-
-              const SizedBox(height: 10),
-
-              _InstructionPreview(
-                icon: Icons.favorite_outline,
-                title: 'Follow-up care',
-                subtitle:
-                'Follow the care instructions provided by your doctor.',
-              ),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text(
-                    'Continue to Care Plan',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  void _removeDocument() {
+    setState(() {
+      _selectedImage = null;
+      _selectedFileName = null;
+      _selectedSource = null;
+      _showExtracted = false;
+      _isProcessing = false;
+    });
   }
 
   // =============================================================
@@ -288,25 +166,32 @@ class _ScanInstructionsScreenState
   }
 
   // =============================================================
-  // BUILD
+  // CONTINUE TO CARE PLAN
   // =============================================================
+
+  void _continueToCarePlan() {
+    _showMessage(
+      'Care Plan will be connected next.',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppTheme.navy,
-          ),
           onPressed: () {
             Navigator.pop(context);
           },
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.navy,
+            size: 20,
+          ),
         ),
         title: const Text(
           'Scan Instructions',
@@ -317,12 +202,12 @@ class _ScanInstructionsScreenState
           ),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
             20,
-            10,
+            8,
             20,
             30,
           ),
@@ -330,239 +215,45 @@ class _ScanInstructionsScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // =================================================
-              // HERO
+              // INTRODUCTION
               // =================================================
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFE5F9F7),
-                      Color(0xFFDDF4F3),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 86,
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: 0.05,
-                            ),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.document_scanner_outlined,
-                        color: AppTheme.primary,
-                        size: 42,
-                      ),
-                    ),
+              _buildHeader(),
 
-                    const SizedBox(height: 18),
-
-                    const Text(
-                      'Understand your care',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppTheme.navy,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    const Text(
-                      'Upload your prescription or discharge '
-                          'document and CareBridge will help '
-                          'simplify the important instructions.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 14,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
 
               // =================================================
-              // NO DOCUMENT
+              // DOCUMENT SELECTION
               // =================================================
 
-              if (_selectedImage == null &&
-                  _selectedPdf == null) ...[
-                const Text(
-                  'Add your document',
-                  style: TextStyle(
-                    color: AppTheme.navy,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+              if (_selectedImage == null)
+                _buildSelectionCard()
+              else
+                _buildDocumentPreview(),
 
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Choose how you want to add your document.',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                _ScanOptionCard(
-                  icon: Icons.camera_alt_outlined,
-                  title: 'Scan with Camera',
-                  subtitle:
-                  'Take a clear photo of your document',
-                  color: const Color(0xFF2D8CFF),
-                  onTap: _openCamera,
-                ),
-
-                const SizedBox(height: 14),
-
-                _ScanOptionCard(
-                  icon: Icons.photo_library_outlined,
-                  title: 'Choose from Gallery',
-                  subtitle:
-                  'Select an existing image',
-                  color: const Color(0xFF8B5FBF),
-                  onTap: _openGallery,
-                ),
-
-                const SizedBox(height: 14),
-
-                _ScanOptionCard(
-                  icon: Icons.picture_as_pdf_outlined,
-                  title: 'Upload PDF',
-                  subtitle:
-                  'Select a prescription or discharge PDF',
-                  color: const Color(0xFFE05A47),
-                  onTap: _openPdfPicker,
-                ),
-              ],
+              const SizedBox(height: 20),
 
               // =================================================
-              // SELECTED DOCUMENT
+              // PROCESSING
               // =================================================
 
-              if (_selectedImage != null ||
-                  _selectedPdf != null)
-                _buildSelectedDocument(),
-
-              const SizedBox(height: 28),
+              if (_isProcessing)
+                _buildProcessingCard(),
 
               // =================================================
-              // SUPPORTED FORMATS
+              // EXTRACTED INFORMATION
               // =================================================
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppTheme.primary,
-                      size: 24,
-                    ),
+              if (_showExtracted && !_isProcessing)
+                _buildExtractedInformation(),
 
-                    SizedBox(width: 12),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Supported formats',
-                            style: TextStyle(
-                              color: AppTheme.navy,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-
-                          SizedBox(height: 4),
-
-                          Text(
-                            'JPG, PNG and PDF files',
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
+              const SizedBox(height: 22),
 
               // =================================================
-              // PRIVACY
+              // PRIVACY NOTE
               // =================================================
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7F0),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Row(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.lock_outline,
-                      color: Color(0xFF2E9B68),
-                      size: 23,
-                    ),
-
-                    SizedBox(width: 12),
-
-                    Expanded(
-                      child: Text(
-                        'Your health information is private. '
-                            'Only you and authorized guardians can '
-                            'access relevant care information.',
-                        style: TextStyle(
-                          color: AppTheme.navy,
-                          fontSize: 13,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildPrivacyCard(),
             ],
           ),
         ),
@@ -571,211 +262,67 @@ class _ScanInstructionsScreenState
   }
 
   // =============================================================
-  // SELECTED DOCUMENT
+  // HEADER
   // =============================================================
 
-  Widget _buildSelectedDocument() {
-    final bool isPdf = _selectedPdf != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Document selected',
-          style: TextStyle(
-            color: AppTheme.navy,
-            fontSize: 21,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        Container(
-          width: double.infinity,
-          height: 300,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: isPdf
-              ? _buildPdfPreview()
-              : _buildImagePreview(),
-        ),
-
-        const SizedBox(height: 14),
-
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _removeDocument,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Choose Another'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.navy,
-                  side: const BorderSide(
-                    color: Color(0xFFD7DEDE),
-                  ),
-                  minimumSize: const Size(
-                    double.infinity,
-                    52,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed:
-                _isProcessing ? null : _processDocument,
-                icon: _isProcessing
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : const Icon(Icons.auto_awesome),
-                label: Text(
-                  _isProcessing
-                      ? 'Processing...'
-                      : 'Process',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                  AppTheme.primary.withValues(
-                    alpha: 0.6,
-                  ),
-                  minimumSize: const Size(
-                    double.infinity,
-                    52,
-                  ),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                ),
-              ),
-            ),
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE5F9F7),
+            Color(0xFFDDF4F3),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
-    );
-  }
-
-  // =============================================================
-  // IMAGE PREVIEW
-  // =============================================================
-
-  Widget _buildImagePreview() {
-    if (kIsWeb) {
-      return Image.network(
-        _selectedImage!.path,
-        fit: BoxFit.contain,
-        errorBuilder: (
-            context,
-            error,
-            stackTrace,
-            ) {
-          return const Center(
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 50,
-              color: AppTheme.textSecondary,
-            ),
-          );
-        },
-      );
-    }
-
-    return Image.file(
-      File(_selectedImage!.path),
-      fit: BoxFit.contain,
-      errorBuilder: (
-          context,
-          error,
-          stackTrace,
-          ) {
-        return const Center(
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            size: 50,
-            color: AppTheme.textSecondary,
-          ),
-        );
-      },
-    );
-  }
-
-  // =============================================================
-  // PDF PREVIEW
-  // =============================================================
-
-  Widget _buildPdfPreview() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 90,
-            height: 90,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFECE8),
-              borderRadius: BorderRadius.circular(24),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(17),
             ),
             child: const Icon(
-              Icons.picture_as_pdf_rounded,
-              color: Color(0xFFE05A47),
-              size: 50,
+              Icons.document_scanner_rounded,
+              color: AppTheme.primary,
+              size: 29,
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(width: 14),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ),
-            child: Text(
-              _selectedPdf?.name ?? 'PDF document',
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppTheme.navy,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            _formatFileSize(
-              _selectedPdf?.size ?? 0,
-            ),
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 13,
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Make your instructions simple',
+                  style: TextStyle(
+                    color: AppTheme.navy,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 7),
+                Text(
+                  'Take a clear photo of your prescription, '
+                      'discharge summary, or care instructions. '
+                      'CareBridge will turn them into simple care tasks.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -783,65 +330,733 @@ class _ScanInstructionsScreenState
     );
   }
 
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    }
+  // =============================================================
+  // SELECTION CARD
+  // =============================================================
 
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    }
+  Widget _buildSelectionCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Add your instructions',
+            style: TextStyle(
+              color: AppTheme.navy,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
 
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+          const SizedBox(height: 6),
+
+          const Text(
+            'Choose how you want to provide your document.',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12.5,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // -----------------------------------------------------
+          // CAMERA
+          // -----------------------------------------------------
+
+          _DocumentOption(
+            icon: Icons.camera_alt_rounded,
+            title: 'Scan with Camera',
+            subtitle:
+            'Take a clear photo using your phone camera',
+            color: AppTheme.primary,
+            onTap: _captureWithCamera,
+            primary: true,
+          ),
+
+          const SizedBox(height: 11),
+
+          // -----------------------------------------------------
+          // GALLERY
+          // -----------------------------------------------------
+
+          _DocumentOption(
+            icon: Icons.photo_library_outlined,
+            title: 'Choose from Gallery',
+            subtitle:
+            'Select an existing photo from your phone',
+            color: const Color(0xFF2D8CFF),
+            onTap: _pickFromGallery,
+          ),
+
+          const SizedBox(height: 11),
+
+          // -----------------------------------------------------
+          // PDF
+          // -----------------------------------------------------
+
+          _DocumentOption(
+            icon: Icons.picture_as_pdf_outlined,
+            title: 'Upload PDF',
+            subtitle:
+            'Use a digital prescription or discharge document',
+            color: const Color(0xFFE36B5D),
+            onTap: _pickPdf,
+          ),
+
+          const SizedBox(height: 18),
+
+          // -----------------------------------------------------
+          // TIP
+          // -----------------------------------------------------
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F8F8),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: Color(0xFFD18A19),
+                  size: 20,
+                ),
+                SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Tip: Place the document on a flat surface '
+                        'and make sure all text is visible and well lit.',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================================
+  // DOCUMENT PREVIEW
+  // =============================================================
+
+  Widget _buildDocumentPreview() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Document captured',
+                  style: TextStyle(
+                    color: AppTheme.navy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+
+              IconButton(
+                onPressed: _removeDocument,
+                tooltip: 'Remove',
+                icon: const Icon(
+                  Icons.close_rounded,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF2E9B68),
+                size: 17,
+              ),
+
+              const SizedBox(width: 6),
+
+              Text(
+                _selectedSource ?? 'Document',
+                style: const TextStyle(
+                  color: Color(0xFF2E9B68),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          // -----------------------------------------------------
+          // IMAGE
+          // -----------------------------------------------------
+
+          if (_selectedImage != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(19),
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(
+                  maxHeight: 380,
+                ),
+                color: const Color(0xFFF3F5F5),
+                child: Image.file(
+                  _selectedImage!,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 14),
+
+          // -----------------------------------------------------
+          // FILE NAME
+          // -----------------------------------------------------
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F9F9),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.description_outlined,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
+
+                const SizedBox(width: 9),
+
+                Expanded(
+                  child: Text(
+                    _selectedFileName ??
+                        'Selected document',
+                    style: const TextStyle(
+                      color: AppTheme.navy,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // -----------------------------------------------------
+          // UNDERSTAND WITH AI BUTTON
+          // -----------------------------------------------------
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              onPressed:
+              _isProcessing ? null : _understandWithAI,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor:
+                AppTheme.primary.withValues(
+                  alpha: 0.5,
+                ),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(17),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 21,
+                  ),
+                  SizedBox(width: 9),
+                  Text(
+                    'Understand with AI',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: _isProcessing
+                  ? null
+                  : _captureWithCamera,
+              icon: const Icon(
+                Icons.camera_alt_outlined,
+                size: 18,
+              ),
+              label: const Text(
+                'Retake photo',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================================
+  // PROCESSING CARD
+  // =============================================================
+
+  Widget _buildProcessingCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F7F5),
+              shape: BoxShape.circle,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(22),
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppTheme.primary,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          const Text(
+            'Understanding your instructions...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.navy,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          const Text(
+            'CareBridge is reading the document and '
+                'organizing important care information.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          _ProcessingStep(
+            icon: Icons.document_scanner_outlined,
+            text: 'Reading document',
+            completed: true,
+          ),
+
+          const SizedBox(height: 9),
+
+          _ProcessingStep(
+            icon: Icons.text_fields_rounded,
+            text: 'Extracting information',
+            completed: true,
+          ),
+
+          const SizedBox(height: 9),
+
+          _ProcessingStep(
+            icon: Icons.auto_awesome_rounded,
+            text: 'Creating simple care tasks',
+            completed: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================================
+  // EXTRACTED INFORMATION
+  // =============================================================
+
+  Widget _buildExtractedInformation() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFD8EFE9),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // -----------------------------------------------------
+          // SUCCESS
+          // -----------------------------------------------------
+
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7F7EE),
+                  borderRadius:
+                  BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF2E9B68),
+                  size: 25,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Instructions understood',
+                      style: TextStyle(
+                        color: AppTheme.navy,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'We found the following care information.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------
+          // MEDICATION
+          // -----------------------------------------------------
+
+          _ExtractedItem(
+            icon: Icons.medication_outlined,
+            title: 'Medication',
+            value: 'Paracetamol 500 mg',
+            detail: 'Take 1 tablet after food',
+            color: AppTheme.primary,
+          ),
+
+          const SizedBox(height: 11),
+
+          // -----------------------------------------------------
+          // TIMING
+          // -----------------------------------------------------
+
+          _ExtractedItem(
+            icon: Icons.schedule_rounded,
+            title: 'Schedule',
+            value: 'Twice a day',
+            detail: 'After breakfast and after dinner',
+            color: const Color(0xFF2D8CFF),
+          ),
+
+          const SizedBox(height: 11),
+
+          // -----------------------------------------------------
+          // FOLLOW UP
+          // -----------------------------------------------------
+
+          _ExtractedItem(
+            icon: Icons.calendar_month_outlined,
+            title: 'Follow-up',
+            value: 'Doctor appointment',
+            detail: 'In 7 days',
+            color: const Color(0xFF8B5FBF),
+          ),
+
+          const SizedBox(height: 18),
+
+          // -----------------------------------------------------
+          // AI DISCLAIMER
+          // -----------------------------------------------------
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8ED),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Row(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFFD18A19),
+                  size: 19,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'CareBridge simplifies your instructions. '
+                        'Always follow the original instructions '
+                        'provided by your healthcare professional.',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 10.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // -----------------------------------------------------
+          // CONTINUE
+          // -----------------------------------------------------
+
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _continueToCarePlan,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(17),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Create My Care Plan',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 9),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 21,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================================
+  // PRIVACY
+  // =============================================================
+
+  Widget _buildPrivacyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7F0),
+        borderRadius: BorderRadius.circular(19),
+      ),
+      child: const Row(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            color: Color(0xFF2E9B68),
+            size: 20,
+          ),
+          SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Your documents contain sensitive health information. '
+                  'CareBridge is designed to keep your information private.',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 10.5,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 // ===============================================================
-// SCAN OPTION CARD
+// DOCUMENT OPTION
 // ===============================================================
 
-class _ScanOptionCard extends StatelessWidget {
+class _DocumentOption extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final bool primary;
 
-  const _ScanOptionCard({
+  const _DocumentOption({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.primary = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
+        borderRadius: BorderRadius.circular(19),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: primary
+                ? color.withValues(alpha: 0.08)
+                : const Color(0xFFF8FAFA),
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(
+              color: primary
+                  ? color.withValues(alpha: 0.35)
+                  : const Color(0xFFE5EBEB),
+            ),
+          ),
           child: Row(
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 49,
+                height: 49,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
+                  color: color.withValues(
+                    alpha: 0.12,
+                  ),
+                  borderRadius:
+                  BorderRadius.circular(15),
                 ),
                 child: Icon(
                   icon,
                   color: color,
-                  size: 30,
+                  size: 25,
                 ),
               ),
 
-              const SizedBox(width: 16),
+              const SizedBox(width: 13),
 
               Expanded(
                 child: Column(
@@ -852,28 +1067,29 @@ class _ScanOptionCard extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: AppTheme.navy,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-
-                    const SizedBox(height: 5),
-
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
-                        fontSize: 13,
+                        fontSize: 11,
+                        height: 1.3,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 17,
-                color: AppTheme.textSecondary,
+              const SizedBox(width: 8),
+
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color,
+                size: 16,
               ),
             ],
           ),
@@ -884,18 +1100,76 @@ class _ScanOptionCard extends StatelessWidget {
 }
 
 // ===============================================================
-// INSTRUCTION PREVIEW
+// PROCESSING STEP
 // ===============================================================
 
-class _InstructionPreview extends StatelessWidget {
+class _ProcessingStep extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool completed;
+
+  const _ProcessingStep({
+    required this.icon,
+    required this.text,
+    required this.completed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 31,
+          height: 31,
+          decoration: BoxDecoration(
+            color: completed
+                ? const Color(0xFFE7F7EE)
+                : const Color(0xFFE8F7F5),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            completed
+                ? Icons.check_rounded
+                : icon,
+            color: completed
+                ? const Color(0xFF2E9B68)
+                : AppTheme.primary,
+            size: 17,
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Text(
+          text,
+          style: const TextStyle(
+            color: AppTheme.navy,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ===============================================================
+// EXTRACTED ITEM
+// ===============================================================
+
+class _ExtractedItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String value;
+  final String detail;
+  final Color color;
 
-  const _InstructionPreview({
+  const _ExtractedItem({
     required this.icon,
     required this.title,
-    required this.subtitle,
+    required this.value,
+    required this.detail,
+    required this.color,
   });
 
   @override
@@ -904,8 +1178,8 @@ class _InstructionPreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F9F9),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFF8FAFA),
+        borderRadius: BorderRadius.circular(17),
       ),
       child: Row(
         crossAxisAlignment:
@@ -915,19 +1189,20 @@ class _InstructionPreview extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(
+              color: color.withValues(
                 alpha: 0.12,
               ),
-              borderRadius: BorderRadius.circular(13),
+              borderRadius:
+              BorderRadius.circular(13),
             ),
             child: Icon(
               icon,
-              color: AppTheme.primary,
+              color: color,
               size: 22,
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 11),
 
           Expanded(
             child: Column(
@@ -937,20 +1212,31 @@ class _InstructionPreview extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: AppTheme.navy,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
 
                 Text(
-                  subtitle,
+                  value,
+                  style: const TextStyle(
+                    color: AppTheme.navy,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  detail,
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
-                    fontSize: 12,
-                    height: 1.4,
+                    fontSize: 11,
+                    height: 1.3,
                   ),
                 ),
               ],

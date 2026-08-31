@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 import '../models/care_task.dart';
 import '../services/home_service.dart';
 import '../theme/app_theme.dart';
+import 'connection_requests_screen.dart';
 import 'scan_instructions_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String patientName;
+
+  const HomeScreen({
+    super.key,
+    this.patientName = 'there',
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // =============================================================
+  // COMPLETE NEXT TASK
+  // =============================================================
+
   void _completeNextTask() {
     final nextTask = HomeService.getNextTask();
 
@@ -25,6 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  // =============================================================
+  // OPEN SCAN INSTRUCTIONS
+  // =============================================================
+
   void _openScanInstructions() {
     Navigator.push(
       context,
@@ -32,6 +46,55 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => const ScanInstructionsScreen(),
       ),
     );
+  }
+
+  // =============================================================
+  // OPEN CONNECTION REQUESTS
+  // =============================================================
+
+  void _openConnectionRequests() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ConnectionRequestsScreen(),
+      ),
+    );
+  }
+
+  // =============================================================
+  // GET TIME-BASED GREETING
+  // =============================================================
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning';
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return 'Good afternoon';
+    }
+
+    return 'Good evening';
+  }
+
+  // =============================================================
+  // GET GREETING ICON
+  // =============================================================
+
+  String _getGreetingEmoji() {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return '🌅';
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return '☀️';
+    }
+
+    return '🌙';
   }
 
   @override
@@ -47,10 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
       // ---------------------------------------------------------
       // BOTTOM NAVIGATION
       // ---------------------------------------------------------
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         backgroundColor: Colors.white,
-        indicatorColor: AppTheme.primary.withValues(alpha: 0.12),
+        indicatorColor:
+        AppTheme.primary.withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -73,37 +138,80 @@ class _HomeScreenState extends State<HomeScreen> {
       // ---------------------------------------------------------
       // MAIN BODY
       // ---------------------------------------------------------
+
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
               // -------------------------------------------------
-              // APP NAME
+              // APP NAME + CONNECTION ICON
               // -------------------------------------------------
-              const Text(
-                'CareBridge',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.navy,
-                ),
+
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'CareBridge',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.navy,
+                      ),
+                    ),
+                  ),
+
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius:
+                      BorderRadius.circular(15),
+                      onTap: _openConnectionRequests,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color:
+                          const Color(0xFFEAF7F6),
+                          borderRadius:
+                          BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.people_alt_outlined,
+                          color: AppTheme.primary,
+                          size: 25,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 18),
 
               // -------------------------------------------------
-              // GREETING
+              // DYNAMIC GREETING
               // -------------------------------------------------
+
               _buildGreetingBanner(),
+
+              const SizedBox(height: 24),
+
+              // -------------------------------------------------
+              // CONNECTION BANNER
+              // -------------------------------------------------
+
+              _buildConnectionBanner(),
 
               const SizedBox(height: 24),
 
               // -------------------------------------------------
               // HELP SECTION
               // -------------------------------------------------
+
               const Text(
                 'How can we help?',
                 style: TextStyle(
@@ -118,6 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // -------------------------------------------------
               // SCAN INSTRUCTIONS
               // -------------------------------------------------
+
               _ActionCard(
                 icon: Icons.document_scanner_outlined,
                 title: 'Scan Instructions',
@@ -132,10 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
               // -------------------------------------------------
               // CARE PLAN
               // -------------------------------------------------
+
               _ActionCard(
                 icon: Icons.assignment_outlined,
                 title: 'My Care Plan',
-                subtitle: "View today's care tasks and instructions",
+                subtitle:
+                "View today's care tasks and instructions",
                 color: const Color(0xFF2E9B68),
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -143,7 +254,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       content: Text(
                         'Care Plan will be connected next.',
                       ),
-                      behavior: SnackBarBehavior.floating,
+                      behavior:
+                      SnackBarBehavior.floating,
                     ),
                   );
                 },
@@ -154,10 +266,12 @@ class _HomeScreenState extends State<HomeScreen> {
               // -------------------------------------------------
               // ASK CAREBRIDGE
               // -------------------------------------------------
+
               _ActionCard(
                 icon: Icons.mic_none_outlined,
                 title: 'Ask CareBridge',
-                subtitle: 'Ask questions using your voice',
+                subtitle:
+                'Ask questions using your voice',
                 color: const Color(0xFF8B5FBF),
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       content: Text(
                         'Ask CareBridge will be connected later.',
                       ),
-                      behavior: SnackBarBehavior.floating,
+                      behavior:
+                      SnackBarBehavior.floating,
                     ),
                   );
                 },
@@ -176,6 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // -------------------------------------------------
               // PROGRESS
               // -------------------------------------------------
+
               const Text(
                 "Today's Progress",
                 style: TextStyle(
@@ -198,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // -------------------------------------------------
               // NEXT TASK
               // -------------------------------------------------
+
               const Text(
                 'Next Up',
                 style: TextStyle(
@@ -221,7 +338,102 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // =============================================================
-  // GREETING BANNER
+  // CONNECTION BANNER
+  // =============================================================
+
+  Widget _buildConnectionBanner() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openConnectionRequests,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFF1EBF8),
+                Color(0xFFF8F4FB),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: const Color(0xFFE5D9F1),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 51,
+                height: 51,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                  BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.people_alt_rounded,
+                  color: Color(0xFF8B5FBF),
+                  size: 27,
+                ),
+              ),
+
+              const SizedBox(width: 13),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Family & Guardians',
+                      style: TextStyle(
+                        color: AppTheme.navy,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Manage who can track your shared progress',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                  BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Color(0xFF8B5FBF),
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =============================================================
+  // DYNAMIC GREETING BANNER
   // =============================================================
 
   Widget _buildGreetingBanner() {
@@ -239,21 +451,23 @@ class _HomeScreenState extends State<HomeScreen> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Text(
-            'Good evening 👋',
-            style: TextStyle(
+            '${_getGreeting()}, ${widget.patientName} '
+                '${_getGreetingEmoji()}',
+            style: const TextStyle(
               fontSize: 25,
               fontWeight: FontWeight.w800,
               color: AppTheme.navy,
             ),
           ),
 
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
 
-          Text(
+          const Text(
             "Let's take care of you today.",
             style: TextStyle(
               fontSize: 14,
@@ -261,9 +475,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          SizedBox(height: 18),
+          const SizedBox(height: 18),
 
-          Row(
+          const Row(
             children: [
               Icon(
                 Icons.favorite_rounded,
@@ -297,23 +511,28 @@ class _HomeScreenState extends State<HomeScreen> {
       int total,
       double progress,
       ) {
-    final percentage = (progress * 100).round();
+    final percentage =
+    (progress * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+        BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: 0.05,
+            ),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment:
@@ -342,11 +561,13 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 14),
 
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius:
+            BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 12,
-              backgroundColor: const Color(0xFFE8ECEC),
+              backgroundColor:
+              const Color(0xFFE8ECEC),
               valueColor:
               const AlwaysStoppedAnimation<Color>(
                 AppTheme.primary,
@@ -378,7 +599,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+        BorderRadius.circular(22),
       ),
       child: Row(
         children: [
@@ -386,8 +608,11 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: AppTheme.primary.withValues(
+                alpha: 0.12,
+              ),
+              borderRadius:
+              BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.medication_outlined,
@@ -407,7 +632,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   task.title,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight:
+                    FontWeight.w700,
                     color: AppTheme.navy,
                   ),
                 ),
@@ -417,7 +643,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   task.time,
                   style: const TextStyle(
-                    color: AppTheme.textSecondary,
+                    color:
+                    AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -448,7 +675,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F7EF),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+        BorderRadius.circular(22),
       ),
       child: const Row(
         children: [
@@ -498,9 +726,11 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius:
+      BorderRadius.circular(22),
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+        BorderRadius.circular(22),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -510,8 +740,11 @@ class _ActionCard extends StatelessWidget {
                 width: 58,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
+                  color: color.withValues(
+                    alpha: 0.12,
+                  ),
+                  borderRadius:
+                  BorderRadius.circular(18),
                 ),
                 child: Icon(
                   icon,
@@ -531,7 +764,8 @@ class _ActionCard extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                        fontWeight:
+                        FontWeight.w700,
                         color: AppTheme.navy,
                       ),
                     ),
@@ -541,7 +775,8 @@ class _ActionCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: AppTheme.textSecondary,
+                        color:
+                        AppTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -551,7 +786,8 @@ class _ActionCard extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_ios,
                 size: 18,
-                color: AppTheme.textSecondary,
+                color:
+                AppTheme.textSecondary,
               ),
             ],
           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/landing_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -16,7 +16,7 @@ class CareBridgeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'CareBridge',
       theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+      home: const LandingScreen(),
     );
   }
 }
